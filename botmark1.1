@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+import talib
+from nsetools import Nse
+import yfinance as yf
+
+# Define the list of candlestick patterns to analyze
+patterns = [
+    'CDLDOJI', 'CDLHAMMER', 'CDLENGULFING', 'CDLMORNINGSTAR', 'CDLSPINNINGTOP',
+    'CDLTHRUSTING', 'CDLENGULFING', 'CDLGRAVESTONEDOJI', 'CDLHARAMI', 'CDLHARAMI',
+    'CDLINSIDE', 'CDLMAKER', 'CDLUNIQUE', 'CDLSTAR', 'CDLSEPARATINGLINES',
+    'CDL3OUTSIDE', 'CDL3INSIDE', 'CDL3STARSINSOUTH', 'CDL3WHITESOLDIERS', 'CDLABANDONEDBABY',
+    'CDLADVANCEBLOCK', 'CDLDOJI', 'CDLDRAGONFLYDOJI', 'CDLENGULFING', 'CDLGRAVESTONEDOJI',
+    'CDLHARAMI', 'CDLHARAMI', 'CDLPIERCING', 'CDLTAKURI', 'CDLUNIQUE'
+]
+
+# Fetch historical data from Yahoo Finance
+def get_stock_data(ticker, start, end):
+    data = yf.download(ticker, start=start, end=end)
+    return data
+
+# Apply candlestick pattern analysis
+def analyze_patterns(df):
+    results = {}
+    for pattern in patterns:
+        func = getattr(talib, pattern, None)
+        if func:
+            df[pattern] = func(df['Open'], df['High'], df['Low'], df['Close'])
+            results[pattern] = df[pattern].dropna().tail(10)  # Show last 10 results
+    return results
+
+# Get NSE stock list
+def get_nse_stock_list():
+    nse = Nse()
+    stock_codes = nse.get_stock_codes()
+    return list(stock_codes.keys())[1:]  # Exclude 'SYMBOL' key
+
+# Example usage
+if __name__ == "__main__":
+    stock_list = get_nse_stock_list()
+    print(f"Found {len(stock_list)} NSE stocks.")
+    
+    # Example for one stock, you can loop over stock_list for multiple stocks
+    ticker = 'RELIANCE.NS'  # Replace with desired NSE ticker
+    start_date = '2023-01-01'
+    end_date = '2024-01-01'
+    
+    data = get_stock_data(ticker, start_date, end_date)
+    
+    if not data.empty:
+        analysis = analyze_patterns(data)
+        for pattern, values in analysis.items():
+            print(f"Pattern: {pattern}")
+            print(values)
+    else:
+        print("No data found for the given ticker and date range.")
